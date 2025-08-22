@@ -1,45 +1,64 @@
 const express = require("express");
 const router = express.Router();
+const axios = require("axios");
 
-module.exports = (db) => {
-  const users = db.collection("users");
+// Example DB models (MongoDB, Firestore, etc.)
+const Wallet = require("../models/Wallet");
+const Transaction = require("../models/Transaction");
 
-  router.get("/", async (req, res) => {
-    try {
-      const { email } = req.query;
-      const snap = await users.doc((email || "").toLowerCase()).get();
-      if (!snap.exists) return res.status(404).json({ error: "User not found" });
-      res.json({ balance: snap.data().walletBalance || 0 });
-    } catch (e) { res.status(500).json({ error: e.message }); }
-  });
+// ✅ Fund wallet via Opay
+router.post("/fund", async (req, res) => {
+  try {
+    const { userId, amount } = req.body;
 
-  // Simple funding (replace with Paystack/Opay webhook later)
-  router.post("/fund", async (req, res) => {
-    try {
-      const { email, amount } = req.body;
-      const amt = Number(amount);
-      if (!email || isNaN(amt) || amt <= 0) return res.status(400).json({ error: "invalid email/amount" });
-      const ref = users.doc(email.toLowerCase());
-      await db.runTransaction(async (t) => {
-        const snap = await t.get(ref);
-        if (!snap.exists) throw new Error("User not found");
-        const u = snap.data();
-        const newBal = (u.walletBalance || 0) + amt;
-        const tx = { type: "funding", amount: amt, status: "success", time: new Date().toISOString(), ref: `FD-${Date.now()}` };
-        t.update(ref, { walletBalance: newBal, transactions: [ ...(u.transactions || []), tx ] });
-      });
-      res.json({ ok: true, message: "Wallet funded" });
-    } catch (e) { res.status(500).json({ error: e.message }); }
-  });
+    // Call Opay API
+    const response = await axios.post("https://api.opaycheckout.com/api/v1/international/payment", {
+      amount: amount,
+      currency: "NGN",
+      reference: "WALLET-" + Date.now(),
+      returnUrl: "https://your-frontend-url.com/wallet.html",
+    }, {
+      headers: {
+        Authorization: `Bearer ${process.env.OPAY_SECRET_KEY}`,
+        "Content-Type": "application/json",
+      },
+    });
 
-  router.get("/transactions", async (req, res) => {
-    try {
-      const { email } = req.query;
-      const snap = await users.doc((email || "").toLowerCase()).get();
-      if (!snap.exists) return res.status(404).json({ error: "User not found" });
-      res.json(snap.data().transactions || []);
-    } catch (e) { res.status(500).json({ error: e.message }); }
-  });
+    // Save pending transaction
+    const tx = new Transaction({
+      userId,
+      type: "fund",
+      amount,
+      status: "pending",
+      reference: response.data.reference,
+    });
+    await tx.save();
 
-  return router;
-};
+    res.json({ checkoutUrl: response.data.data.link });
+  } catch (err) {
+    console.error(err.response?.data || err.message);
+    res.status(500).json({ error: "Opay funding failed" });
+  }
+});
+
+// ✅ Check wallet balance
+router.get("/balance/:userId", async (req, res) => {
+  try {
+    const wallet = await Wallet.findOne({ userId: req.params.userId });
+    res.json({ balance: wallet ? wallet.balance : 0 });
+  } catch (err) {
+    res.status(500).json({ error: "Could not fetch balance" });
+  }
+});
+
+// ✅ Transaction history
+router.get("/transactions/:userId", async (req, res) => {
+  try {
+    const txs = await Transaction.find({ userId: req.params.userId }).sort({ createdAt: -1 });
+    res.json(txs);
+  } catch (err) {
+    res.status(500).json({ error: "Could not fetch transactions" });
+  }
+});
+
+module.exports = router;
