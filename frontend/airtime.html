@@ -1,0 +1,24 @@
+<!DOCTYPE html><html><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="css/style.css"><title>Airtime</title>
+</head><body><div class="container">
+  <div class="topnav">
+    <a href="index.html">Home</a><a href="wallet.html">Wallet</a><a href="data.html">Data</a><a href="history.html">History</a>
+  </div>
+  <div class="card">
+    <h2>Buy Airtime</h2>
+    <input id="aPhoneEl" placeholder="Phone number">
+    <input id="aAmountEl" type="number" placeholder="Amount (₦)">
+    <select id="aNetEl">
+      <option value="mtn">MTN</option><option value="airtel">Airtel</option><option value="glo">Glo</option><option value="9mobile">9mobile</option>
+    </select>
+    <button onclick="buyAirtime()">Buy Airtime</button>
+  </div>
+<script src="js/main.js"></script>
+<script>
+const aPhoneEl=document.getElementById("aPhoneEl");
+const aAmountEl=document.getElementById("aAmountEl");
+const aNetEl=document.getElementById("aNetEl");
+const balEl={innerText:""}; loadWallet();
+</script>
+</div></body></html>
