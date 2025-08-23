@@ -1,0 +1,24 @@
+<!DOCTYPE html><html><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="css/style.css"><title>Data</title>
+</head><body><div class="container">
+  <div class="topnav">
+    <a href="index.html">Home</a><a href="wallet.html">Wallet</a><a href="airtime.html">Airtime</a><a href="history.html">History</a>
+  </div>
+  <div class="card">
+    <h2>Buy Data</h2>
+    <input id="dPhoneEl" placeholder="Phone number">
+    <select id="dPlanEl">
+      <!-- For live SMEPlug plans, build options dynamically. For now, manual: -->
+      <option value="mtn|mtn-1gb-30d|500">MTN 1GB (30d) — ₦500</option>
+      <option value="mtn|mtn-2gb-30d|900">MTN 2GB (30d) — ₦900</option>
+    </select>
+    <button onclick="buyData()">Buy Data</button>
+  </div>
+<script src="js/main.js"></script>
+<script>
+const dPhoneEl=document.getElementById("dPhoneEl");
+const dPlanEl=document.getElementById("dPlanEl");
+const balEl={innerText:""}; loadWallet();
+</script>
+</div></body></html>
